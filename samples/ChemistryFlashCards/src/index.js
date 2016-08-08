@@ -239,7 +239,9 @@ function onIntent(intentRequest, session, callback) {
     } else if ("AMAZON.YesIntent" === intentName) {
         handleAnswerRequest(intent, session, callback);
     } else if ("AMAZON.NoIntent" === intentName) {
-        handleAnswerRequest(intent, session, callback);
+        // when user says no to continue, Alexa should terminate instead of looking
+        // for an answer
+        handleFinishSessionRequest(intent, session, callback);
     } else if ("AMAZON.StartOverIntent" === intentName) {
         getWelcomeResponse(callback);
     } else if ("AMAZON.RepeatIntent" === intentName) {
@@ -386,7 +388,7 @@ function handleAnswerRequest(intent, session, callback) {
         // If the user provided answer isn't a number > 0 and < ANSWER_COUNT,
         // return an error message to the user. Remember to guide the user into providing correct values.
         var reprompt = session.attributes.speechOutput;
-        var speechOutput = "Sorry, your answer is not is our list. " + reprompt;
+        var speechOutput = "Sorry, your answer is not in our list. " + reprompt;
         callback(session.attributes,
             buildSpeechletResponse(CARD_TITLE, speechOutput, reprompt, false));
     } else {
@@ -457,13 +459,12 @@ function handleRepeatRequest(intent, session, callback) {
 }
 
 function handleGetHelpRequest(intent, session, callback) {
-    // Do not edit the help dialogue. This has been created by the Alexa team to demonstrate best practices.
-
+    // Do not edit the help dialogue. This has been created by the Alexa team to demonstrate best practices. 
     var speechOutput = "To start a new game at any time, say, start new game. "
         + "To repeat the last element, say, repeat. "
-        + "Would you like to keep playing?",
+        + "Would you like to keep playing?, say repeat, start new game, or no",
         repromptText = "Try to get the right answer. "
-        + "Would you like to keep playing?";
+        + "Would you like to keep playing?, say repeat, start new game, or no";
         var shouldEndSession = false;
     callback(session.attributes,
         buildSpeechletResponseWithoutCard(speechOutput, repromptText, shouldEndSession));
@@ -476,9 +477,10 @@ function handleFinishSessionRequest(intent, session, callback) {
 }
 
 function isAnswerSlotValid(intent) {
+    // instead of always return true, if any of the following is undefined, we will return false
+    // then Alexa will say "Sorry, your answer is not in our list."
     var answerSlotFilled = intent.slots && intent.slots.Answer && intent.slots.Answer.value;
-    var answerSlotIsInt = answerSlotFilled && !isNaN(parseInt(intent.slots.Answer.value));
-    return 1;
+    return bool(answerSlotFilled);
 }
 
 // ------- Helper functions to build responses -------
